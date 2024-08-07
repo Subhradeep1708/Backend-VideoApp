@@ -1,0 +1,16 @@
+{
+  "name": "chai-backend-videoapp",
+  "version": "1.0.0",
+  "description": "A video app backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "VideoApp",
+    "Javascript",
+    "backend"
+  ],
+  "author": "Subhradeep Sardar",
+  "license": "ISC"
+}
