@@ -2,9 +2,10 @@
   "name": "chai-backend-videoapp",
   "version": "1.0.0",
   "description": "A video app backend",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/index.js"
   },
   "keywords": [
     "VideoApp",
@@ -12,5 +13,8 @@
     "backend"
   ],
   "author": "Subhradeep Sardar",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
 }
