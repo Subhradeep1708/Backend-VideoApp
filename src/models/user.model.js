@@ -51,12 +51,13 @@ const userSchema = new Schema(
 
 
 //do not use arrow func as they dont have this context
+
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next() //agar password field change hoga tabhi data save hoga(Pre hook har bar data change hone me chalta hai)
-    this.password = bcrypt.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next()
 })
- 
+
 
 // user jab password likhega toh kaise check kare(custom method)
 

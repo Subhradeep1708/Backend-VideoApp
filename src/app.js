@@ -31,14 +31,17 @@ app.use(cookieParser())
 
 
 
+
+
 //routes import
 
 import userRouter from './routes/user.routes.js'
 
 
 //routes declaration
-// app.get() nahi likh sakte as router middleware ki tarah dusre file me defined hai so middleware ki tarah treat krna hoga
+
+// app.get() nahi likh sakte as router middleware ki tarah dusre file me defined hai so middleware ki tarah treat krna hoga app.use()
 
 app.use("/api/v1/users", userRouter)
-
+//url=> https://localhost:8000/api/v1/users now it will go to user.routes 
 export { app }
