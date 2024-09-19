@@ -7,7 +7,7 @@ import connectDB from "./db/index.js";
 import { app } from './app.js';
 
 dotenv.config({ //configuring dotenv path 
-    path: './env'
+    path: './.env'
 })
 
 // connectDB method is async this will return a promise(Usko handle krna padega)

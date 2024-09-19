@@ -13,6 +13,27 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 //     })
 // })
 
+
+// access and refresh token ka separate method(reusability)
+const generateAccessAndRefreshToken = async (userId) => {
+    try {
+        const user = await User.findById(userId)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        //Db me refreshToken store
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false })//save karne time new password checking nehi hoga
+
+        return { accessToken, refreshToken }
+
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while generating access and refresh token")
+    }
+}
+
+
+
 const registerUser = asyncHandler(async (req, res) => {
     // STEPS TO REGISTER A USER (Algorithm)
     //1. get user details from frontend
@@ -27,7 +48,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // step 1: frontend se req.body me data aata hai(url se bhi aa sakta hai)
     const { fullName, username, email, password } = req.body
-    console.log("email:", email);
+    // console.log("email:", email);
 
     // step 2: validation 
 
@@ -45,15 +66,19 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
     // step 3: user exist or not check
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({ // matching doc ko return karega
         $or: [{ username }, { email }] //or se ekse jyada find kar skte hai nehito only ek hi find ke field leta hai findOne
     })
 
-    console.log("existedUser : ", existedUser);
+    // console.log("existedUser : ", existedUser);
 
     if (existedUser) {
         throw new ApiError(409, "User with email and username already exists")
     }
+
+
+    // console.log(req.files);
+
 
     // step 4: check for images & avatar
 
@@ -61,9 +86,17 @@ const registerUser = asyncHandler(async (req, res) => {
 
     //files ke first property ke andar ek object milta hai jo multer ke upload kiya hua file path hai
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    console.log(req.files);
 
-    //avatar is compulsory
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path;//giving error when not sending coverimage in postman
+
+    let coverImageLocalPath;
+    //agar coverImage de tabhi local path store hoga
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path;
+    }
+
+    //avatar is compulsory (coverImage is not compulsory)
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required");
     }
@@ -106,8 +139,75 @@ const registerUser = asyncHandler(async (req, res) => {
 
     //Step 9: return response
     return res.status(201).json(
-        new ApiResponse(200,createdUser,"User registered Successfully")//ApiResponse class ka object bana ke return kr rhe hai
+        new ApiResponse(200, createdUser, "User registered Successfully")//ApiResponse class ka object bana ke return kr rhe hai
     )
 })
 
-export { registerUser } 
+
+// creating login feature
+const loginUser = asyncHandler(async (req, res) => {
+    // STEPS TO LOGIN USER
+    // 1. req.body -> data laoo
+    // 2. username or email based login
+    // 3. find the user(DB me registered hoga usse match krna hai)
+    // 4. password check if user is found
+    // 5. access & refresh token created
+    // 6. send cookies
+
+    // Step1&2:
+    const { email, username, password } = req.body
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    // Step3. find the user(DB me registered hoga usse match krna hai)
+    // yah toh usename mil jaaye yah fir email
+
+    const user = await User.findOne({
+        $or: [{ username }, { email }] //or operator username ya fir email find karega 
+    })
+
+    if (!user) {
+        throw new ApiError(404, "user does not exist")
+    }
+
+
+    // Step4: password check if user is found
+    //isPasswordCorrect method is defined in user.model.js file
+    const isPasswordValid = await user.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+    // Step5: generating access & refresh token 
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id)
+
+    //Step6: sending cookies
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+    const options = {
+        httpOnly: true, //by default anyone can modify cookies but httpOnly makes it modifiable only by server 
+        secure: true
+    }
+
+    return res.status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: loggedInUser, accessToken, refreshToken
+                },
+                "User logged in Successfully"
+            )
+        )
+})
+
+//logging out of user
+
+const logoutUser = asyncHandler(async (req, res) => {
+
+})
+export { registerUser, loginUser }  
