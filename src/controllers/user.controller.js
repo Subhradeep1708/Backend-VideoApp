@@ -156,7 +156,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     // Step1&2:
     const { email, username, password } = req.body
-    if (!username || !email) {
+    if (!username && !email) {
         throw new ApiError(400, "username or email is required")
     }
 
@@ -187,7 +187,7 @@ const loginUser = asyncHandler(async (req, res) => {
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     const options = {
-        httpOnly: true, //by default anyone can modify cookies but httpOnly makes it modifiable only by server 
+        httpOnly: true, //by default anyone can modify cookies but httpOnly makes it modifiable only by server (not modifiable by frontend)
         secure: true
     }
 
@@ -205,9 +205,38 @@ const loginUser = asyncHandler(async (req, res) => {
         )
 })
 
-//logging out of user
 
+
+//logging out of user
 const logoutUser = asyncHandler(async (req, res) => {
+    // middleware se req.user naam ke object created jaha user milega
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            //$set batata hai which fields to be updated
+            $set: {
+                refreshToken: undefined // refreshToken deleted
+            }
+        },
+        {
+            new: true //res me new updated value milega jaha refreshToken nahi hoga
+        }
+    )
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(
+            new ApiResponse(200,{},"User logged out")
+        )
 
 })
-export { registerUser, loginUser }  
+
+
+export { registerUser, loginUser, logoutUser }  
